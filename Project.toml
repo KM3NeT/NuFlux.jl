@@ -1,0 +1,9 @@
+name = "NuFlux"
+uuid = "efbbe403-48f9-4d1c-bbe5-17d2c19d1ebf"
+authors = ["Johannes Schumann <johannes.schumann@fau.de>"]
+version = "0.1.0"
+
+[deps]
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
