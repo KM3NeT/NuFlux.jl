@@ -3,12 +3,16 @@ module NuFlux
 using DelimitedFiles
 using StatsBase
 using Statistics
+using Corpuscles
 
-@enum NeutrinoType begin
-    Muon = 1
-    AntiMuon =2
-    Electron = 3
-    AntiElectron = 4
+abstract type Flux end
+
+struct FluxTable <: Flux
+    coszentihbinedges::Vector{Float64}
+    azimuthbinedges::Vector{Float64}
+    energies::Vector{Float64}
+    particle::Particle
+    flux::Array{Float64, 3}
 end
 
 struct FluxBinInfo
@@ -24,17 +28,13 @@ function parsefluxbininfo(line)
     FluxBinInfo(numbers...)
 end
 
-function _generateenergybinedges(energies::Vector{T}) where T <: Real
-    vcat(energies, Inf)
-end
-
 function readfluxfile(io)
     lines = readlines(io)
     idx = findall(l->occursin("average",l), lines)
     fluxes = Dict()
     coszedges = Set(Vector{Rational}())
     azimuthedges = Set(Vector{Rational}())
-    energyedges = nothing
+    energies = nothing
     for (i,j) in collect(zip(idx[1:end], [idx[2:end]..., lastindex(lines)+1]))
         bininfo = parsefluxbininfo(lines[i])
         coszedges = union(coszedges, Set(bininfo.CosZenithBin))
@@ -47,22 +47,21 @@ function readfluxfile(io)
         seekstart(bfr)
         tmp = readdlm(bfr, ' ','\n')
         fluxes[bininfo] = tmp[:,2:end]
-        if isnothing(energyedges)
-            energyedges = _generateenergybinedges(tmp[:,1])
+        if isnothing(energies)
+            energies = tmp[:,1]
         end
     end
-    @show energyedges
     coszedges = sort(collect(coszedges))
     azimuthedges = sort(collect(azimuthedges))
-    data = zeros(Float64, length(coszedges)-1, length(azimuthedges)-1, length(energyedges)-1, 4)
+    data = zeros(Float64, length(coszedges)-1, length(azimuthedges)-1, length(energies), 4)
     for (k,v) in fluxes
         coszbin = searchsortedfirst(coszedges, mean(k.CosZenithBin))-1
         azimutbin = searchsortedfirst(azimuthedges, mean(k.AzimutBin))-1
         data[coszbin, azimutbin, :, :] = v
     end
-    retval = Dict{NeutrinoType, Histogram}()
-    for nutype in 1:NeutrinoType.size
-        retval[NeutrinoType(nutype)] = Histogram((coszedges, azimuthedges, energyedges), data[:,:,:,nutype])
+    retval = Vector{FluxTable}()
+    for (i,p) in enumerate([Particle(14), Particle(-14), Particle(12), Particle(-12)])
+        push!(retval, FluxTable(coszedges, azimuthedges, energies, p, data[:,:,:,i]))
     end
     retval
 end
@@ -74,15 +73,19 @@ function readfluxfile(filepath::String)
     ret
 end
 
-function (h::Histogram)(x...)
-    dims = length(h.edges)
-    (length(x) != dims) && throw(DimensionMismatch("Size of arguments not equal to the histogram dimensions"))
-    idx = zeros(Int64, dims)
-    for i in 1:dims
-        idx[i] = searchsortedfirst(h.edges[i], x[i])
+function _getbinindex(binedges, x)
+    if x ≈ first(binedges)
+        return 1
+    else
+        return searchsortedfirst(binedges, x)-1
     end
-    h.weights[idx...]
 end
 
+function (h::FluxTable)(energy::A, coszenith::B, azimuth::C) where {A,B,C <: Real}
+    idx_energy = findmin(abs.(h.energies .- energy))[2]
+    idx_azimuth = _getbinindex(h.azimuthbinedges, azimuth)
+    idx_coszenith = _getbinindex(h.coszentihbinedges, coszenith)
+    h.flux[idx_coszenith, idx_azimuth, idx_energy]
+end
 
 end # module
