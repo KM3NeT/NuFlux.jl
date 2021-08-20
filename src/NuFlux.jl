@@ -1,5 +1,6 @@
 module NuFlux
 
+using DocStringExtensions
 using DelimitedFiles
 using StatsBase
 using Statistics
@@ -81,11 +82,20 @@ function _getbinindex(binedges, x)
     end
 end
 
-function (h::FluxTable)(energy::A, coszenith::B, azimuth::C) where {A,B,C <: Real}
-    idx_energy = findmin(abs.(h.energies .- energy))[2]
-    idx_azimuth = _getbinindex(h.azimuthbinedges, azimuth)
-    idx_coszenith = _getbinindex(h.coszentihbinedges, coszenith)
-    h.flux[idx_coszenith, idx_azimuth, idx_energy]
+"""
+$(SIGNATURES)
+
+# Arguments
+- `flux`:   Flux data 
+- `energy`: Energy in GeV
+- `cosθ`:   Cosine of the zenith angle
+- `ϕ`:      Azimuth angle
+"""
+function flux(f::S, energy::T, cosθ::U, ϕ::V) where {S <: Flux, T,U,V <: Real}
+    idx_energy = findmin(abs.(f.energies .- energy))[2]
+    idx_azimuth = _getbinindex(f.azimuthbinedges, ϕ)
+    idx_coszenith = _getbinindex(f.coszentihbinedges, cosθ)
+    f.flux[idx_coszenith, idx_azimuth, idx_energy]
 end
 
 end # module
