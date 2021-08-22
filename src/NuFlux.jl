@@ -5,6 +5,7 @@ using DelimitedFiles
 using StatsBase
 using Statistics
 using Corpuscles
+using Interpolations
 
 abstract type Flux end
 
@@ -14,6 +15,7 @@ struct FluxTable <: Flux
     energies::Vector{Float64}
     particle::Particle
     flux::Array{Float64, 3}
+    sitp::Interpolations.Extrapolation
 end
 
 struct FluxBinInfo
@@ -27,6 +29,16 @@ function parsefluxbininfo(line)
     regex = eachmatch(r"-?\d+\.?\d*", line)
     numbers = collect(rationalize(parse(Float64, m.match)) for m in regex)
     FluxBinInfo(numbers...)
+end
+
+function _getbinmids(binedges)
+    Float64.(mean.(binedges[2:end] .+ binedges[1:end-1]) ./ 2)
+end
+
+function _makerange(x)
+    diffs = x[2:end] - x[1:end-1]
+    std(diffs) > 1e-4 && error("value spacing not constant")
+    minimum(x):mean(diffs):maximum(x)
 end
 
 function readfluxfile(io)
@@ -62,7 +74,11 @@ function readfluxfile(io)
     end
     retval = Vector{FluxTable}()
     for (i,p) in enumerate([Particle(14), Particle(-14), Particle(12), Particle(-12)])
-        push!(retval, FluxTable(coszedges, azimuthedges, energies, p, data[:,:,:,i]))
+        tmp = data[:,:,:,i]
+        itp = interpolate(tmp, BSpline(Cubic(Line(OnGrid()))))
+        sitp = scale(itp, _makerange(_getbinmids(coszedges)), _makerange(_getbinmids(azimuthedges)), _makerange(log10.(energies)))
+        etp = extrapolate(sitp, Flat())
+        push!(retval, FluxTable(coszedges, azimuthedges, energies, p, tmp, etp))
     end
     retval
 end
@@ -86,16 +102,21 @@ end
 $(SIGNATURES)
 
 # Arguments
-- `flux`:   Flux data 
-- `energy`: Energy in GeV
-- `cosθ`:   Cosine of the zenith angle
-- `ϕ`:      Azimuth angle
+- `flux`:           Flux data 
+- `energy`:         Energy in GeV
+- `cosθ`:           Cosine of the zenith angle
+- `ϕ`:              Azimuth angle
+- `interpolate`:    Interpolate the data
 """
-function flux(f::S, energy::T, cosθ::U, ϕ::V) where {S <: Flux, T,U,V <: Real}
-    idx_energy = findmin(abs.(f.energies .- energy))[2]
-    idx_azimuth = _getbinindex(f.azimuthbinedges, ϕ)
-    idx_coszenith = _getbinindex(f.coszentihbinedges, cosθ)
-    f.flux[idx_coszenith, idx_azimuth, idx_energy]
+function flux(f::FluxTable, energy::S, cosθ::T, ϕ::U; interpolate::Bool=false) where {S,T,U <: Real}
+    if interpolate
+        return f.sitp(cosθ, ϕ, log10(energy))
+    else
+        idx_energy = findmin(abs.(f.energies .- energy))[2]
+        idx_azimuth = _getbinindex(f.azimuthbinedges, ϕ)
+        idx_coszenith = _getbinindex(f.coszentihbinedges, cosθ)
+        return f.flux[idx_coszenith, idx_azimuth, idx_energy]
+    end
 end
 
 end # module
