@@ -6,6 +6,7 @@ using StatsBase
 using Statistics
 using Corpuscles
 using Interpolations
+using LRUCache
 
 abstract type Flux end
 
@@ -15,7 +16,6 @@ struct FluxTable <: Flux
     energies::Vector{Float64}
     particle::Particle
     flux::Array{Float64, 3}
-    sitp::Interpolations.Extrapolation
 end
 
 struct FluxBinInfo
@@ -75,10 +75,10 @@ function readfluxfile(io)
     retval = Vector{FluxTable}()
     for (i,p) in enumerate([Particle(14), Particle(-14), Particle(12), Particle(-12)])
         tmp = data[:,:,:,i]
-        itp = interpolate(tmp, BSpline(Cubic(Line(OnGrid()))))
-        sitp = scale(itp, _makerange(_getbinmids(coszedges)), _makerange(_getbinmids(azimuthedges)), _makerange(log10.(energies)))
-        etp = extrapolate(sitp, Flat())
-        push!(retval, FluxTable(coszedges, azimuthedges, energies, p, tmp, etp))
+        # itp = interpolate(tmp, BSpline(Cubic(Line(OnGrid()))))
+        # sitp = scale(itp, _makerange(_getbinmids(coszedges)), _makerange(_getbinmids(azimuthedges)), _makerange(log10.(energies)))
+        # etp = extrapolate(sitp, Flat())
+        push!(retval, FluxTable(coszedges, azimuthedges, energies, p, tmp))
     end
     retval
 end
@@ -98,19 +98,78 @@ function _getbinindex(binedges, x)
     end
 end
 
+const lru_energy_etp = LRU{NuFlux.FluxTable, Interpolations.Extrapolation}(maxsize=20000)
+
 """
 $(SIGNATURES)
 
 # Arguments
-- `flux`:           Flux data 
-- `energy`:         Energy in GeV
-- `cosθ`:           Cosine of the zenith angle
-- `ϕ`:              Azimuth angle
-- `interpolate`:    Interpolate the data
+- `flux`:       Flux data 
+- `energy`:     Energy in GeV
+- `interpol`:   Interpolate the data
 """
-function flux(f::FluxTable, energy::S, cosθ::T, ϕ::U; interpolate::Bool=false) where {S,T,U <: Real}
-    if interpolate
-        return f.sitp(cosθ, ϕ, log10(energy))
+function flux(f::FluxTable, energy::S; interpol::Bool=false) where {S <: Real}
+    if interpol
+        etp = get!(lru_energy_etp, f) do
+            tmp = mean(f.flux, dims=(1,2))[1,1,:]
+            itp = interpolate(tmp, BSpline(Cubic(Line(OnGrid()))))
+            sitp = scale(itp, _makerange(log10.(f.energies)))
+            extrapolate(sitp, Flat())
+        end
+        return etp(log10(energy))
+    else
+        idx_energy = findmin(abs.(f.energies .- energy))[2]
+        return mean(f.flux[:, :, idx_energy])
+    end
+end
+
+const lru_zenith_energy_etp = LRU{NuFlux.FluxTable, Interpolations.Extrapolation}(maxsize=20000)
+
+"""
+$(SIGNATURES)
+
+# Arguments
+- `flux`:       Flux data 
+- `energy`:     Energy in GeV
+- `cosθ`:       Cosine of the zenith angle
+- `interpol`:   Interpolate the data
+"""
+function flux(f::FluxTable, energy::S, cosθ::T; interpol::Bool=false) where {S,T <: Real}
+    if interpol
+        etp = get!(lru_zenith_energy_etp, f) do
+            tmp = mean(f.flux, dims=2)[:,1,:]
+            itp = interpolate(tmp, BSpline(Cubic(Line(OnGrid()))))
+            sitp = scale(itp, _makerange(_getbinmids(f.coszentihbinedges)), _makerange(log10.(f.energies)))
+            extrapolate(sitp, Flat())
+        end
+        return etp(cosθ, log10(energy))
+    else
+        idx_energy = findmin(abs.(f.energies .- energy))[2]
+        idx_coszenith = _getbinindex(f.coszentihbinedges, cosθ)
+        return mean(f.flux[idx_coszenith, :, idx_energy])
+    end
+end
+
+const lru_zenith_azimuth_energy_etp = LRU{NuFlux.FluxTable, Interpolations.Extrapolation}(maxsize=20000)
+
+"""
+$(SIGNATURES)
+
+# Arguments
+- `flux`:       Flux data 
+- `energy`:     Energy in GeV
+- `cosθ`:       Cosine of the zenith angle
+- `ϕ`:          Azimuth angle
+- `interpol`:   Interpolate the data
+"""
+function flux(f::FluxTable, energy::S, cosθ::T, ϕ::U; interpol::Bool=false) where {S,T,U <: Real}
+    if interpol
+        etp = get!(lru_zenith_azimuth_energy_etp, f) do
+            itp = interpolate(f.flux, BSpline(Cubic(Line(OnGrid()))))
+            sitp = scale(itp, _makerange(_getbinmids(f.coszentihbinedges)), _makerange(_getbinmids(f.azimuthbinedges)), _makerange(log10.(f.energies)))
+            extrapolate(sitp, Flat())
+        end
+        return etp(cosθ, ϕ, log10(energy))
     else
         idx_energy = findmin(abs.(f.energies .- energy))[2]
         idx_azimuth = _getbinindex(f.azimuthbinedges, ϕ)
