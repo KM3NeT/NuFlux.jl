@@ -15,4 +15,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/8me/NuFlux.jl",
+    devbranch="main"
 )
