@@ -1,3 +1,3 @@
 var documenterSearchIndex = {"docs":
-[{"location":"","page":"Introduction","title":"Introduction","text":"<img style=\"height:2em;\" alt=\"NuFlux.jl\" src=\"docs/src/assets/nuflux.svg\"/>","category":"page"},{"location":"","page":"Introduction","title":"Introduction","text":"Neutrino flux table parser","category":"page"}]
+[{"location":"","page":"Introduction","title":"Introduction","text":"<img style=\"height:2em;\" alt=\"NuFlux.jl\" src=\"assets/nuflux.svg\"/>","category":"page"},{"location":"#NuFlux.jl","page":"Introduction","title":"NuFlux.jl","text":"","category":"section"},{"location":"","page":"Introduction","title":"Introduction","text":"NuFlux.jl is a package for neutrino flux functionality, i.e. the parsing  and interpolating flux tables from different measurements.","category":"page"},{"location":"#Basic-Usage","page":"Introduction","title":"Basic Usage","text":"","category":"section"}]
 }
