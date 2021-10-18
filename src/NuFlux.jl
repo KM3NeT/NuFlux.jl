@@ -8,7 +8,19 @@ using Corpuscles
 using Interpolations
 using LRUCache
 
+const _data_dir = abspath(joinpath(@__DIR__, "..", "data"))
+
+
 abstract type Flux end
+
+struct PowerLawFlux <: Flux
+    spectralindex::Float64
+    normalisation::Float64
+    cutoff::Float64
+end
+
+PowerLawFlux(spectralindex) = PowerLawFlux(spectralindex, 1, NaN)
+PowerLawFlux(spectralindex, normalisation) = PowerLawFlux(spectralindex, normalisation, NaN)
 
 struct FluxTable <: Flux
     coszentihbinedges::Vector{Float64}
@@ -75,9 +87,6 @@ function readfluxfile(io)
     retval = Vector{FluxTable}()
     for (i,p) in enumerate([Particle(14), Particle(-14), Particle(12), Particle(-12)])
         tmp = data[:,:,:,i]
-        # itp = interpolate(tmp, BSpline(Cubic(Line(OnGrid()))))
-        # sitp = scale(itp, _makerange(_getbinmids(coszedges)), _makerange(_getbinmids(azimuthedges)), _makerange(log10.(energies)))
-        # etp = extrapolate(sitp, Flat())
         push!(retval, FluxTable(coszedges, azimuthedges, energies, p, tmp))
     end
     retval
@@ -156,7 +165,7 @@ const lru_zenith_azimuth_energy_etp = LRU{NuFlux.FluxTable, Interpolations.Extra
 $(SIGNATURES)
 
 # Arguments
-- `flux`:       Flux data 
+- `f`:          FluxTable 
 - `energy`:     Energy in GeV
 - `cosθ`:       Cosine of the zenith angle
 - `ϕ`:          Azimuth angle
@@ -177,5 +186,28 @@ function flux(f::FluxTable, energy::S, cosθ::T, ϕ::U; interpol::Bool=false) wh
         return f.flux[idx_coszenith, idx_azimuth, idx_energy]
     end
 end
+
+"""
+$(SIGNATURES)
+
+# Arguments
+- `f`:          PowerLawFlux model
+- `energy`:     Energy in GeV
+"""
+function flux(f::PowerLawFlux, energy::S) where {S <: Real}
+    retval = 1e-18 * f.normalisation * (energy / 1e5) ^ f.spectralindex 
+    if !isnan(f.cutoff)
+        retval *= exp(- energy / f.cutoff)
+    end
+    retval
+end
+
+function available_flux_files()
+    dir_content = readdir(_data_dir)
+    filter!(s->occursin(".d",s), dir_content)
+    joinpath.(_data_dir, dir_content)
+end
+
+const _flux_tables = available_flux_files()
 
 end # module
