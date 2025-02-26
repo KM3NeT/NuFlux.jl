@@ -75,9 +75,6 @@ function readfluxfile(io)
     retval = Vector{FluxTable}()
     for (i,p) in enumerate([Particle(14), Particle(-14), Particle(12), Particle(-12)])
         tmp = data[:,:,:,i]
-        # itp = interpolate(tmp, BSpline(Cubic(Line(OnGrid()))))
-        # sitp = scale(itp, _makerange(_getbinmids(coszedges)), _makerange(_getbinmids(azimuthedges)), _makerange(log10.(energies)))
-        # etp = extrapolate(sitp, Flat())
         push!(retval, FluxTable(coszedges, azimuthedges, energies, p, tmp))
     end
     retval
