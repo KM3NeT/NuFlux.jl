@@ -8,6 +8,7 @@ makedocs(;
     ),
     pages=[
         "Introduction" => "index.md",
+        "API" => "api.md",
     ],
     repo="https://github.com/8me/NuFlux.jl/blob/{commit}{path}#L{line}",
     sitename="NuFlux.jl",
