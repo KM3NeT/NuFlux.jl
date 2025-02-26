@@ -19,7 +19,7 @@ Next step is to run the following command in the Julia REPL:
 
 ```julia
 using Pkg
-Pkg.activate()
+Pkg.instantiate()
 ```
 
 Then you are good to go to use `NuFlux.jl`
