@@ -8,6 +8,11 @@ using Corpuscles
 using Interpolations
 using LRUCache
 
+const NUE_PDGID = Particle("nu(e)0").pdgid.value
+const ANUE_PDGID = Particle("~nu(e)0").pdgid.value
+const NUMU_PDGID = Particle("nu(mu)0").pdgid.value
+const ANUMU_PDGID = Particle("~nu(mu)0").pdgid.value
+
 """
 Abstract type representing a neutrino flux model.
 """
@@ -121,7 +126,7 @@ Read a flux file and construct a vector of `FluxTable` instances.
 - `io`: An IO stream or file path to the flux data.
 
 # Returns
-- `Vector{FluxTable}`: A vector of `FluxTable` instances representing the flux data.
+- `Dict{FluxTable}`: A dictionary of `FluxTable` instances representing the flux data indexed by PDG ID.
 """
 function readfluxfile(io)
     lines = readlines(io)
@@ -155,11 +160,15 @@ function readfluxfile(io)
         data[coszbin, azimutbin, :, :] = v
     end
     retval = Vector{FluxTable}()
-    for (i,p) in enumerate([Particle(14), Particle(-14), Particle(12), Particle(-12)])
+    for (i,p) in enumerate([Particle(NUMU_PDGID), Particle(ANUMU_PDGID), Particle(NUE_PDGID), Particle(ANUE_PDGID)])
         tmp = data[:,:,:,i]
         push!(retval, FluxTable(coszedges, azimuthedges, energies, p, tmp))
     end
-    retval
+    retdict = Dict(NUE_PDGID => retval[3],
+        NUMU_PDGID => retval[1],
+        ANUE_PDGID => retval[4],
+        ANUMU_PDGID => retval[2],)
+    retdict
 end
 
 """
