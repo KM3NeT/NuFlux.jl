@@ -2,7 +2,7 @@ using Documenter, NuFlux
 
 makedocs(;
     modules = [NuFlux],
-    authors = "Johannes Schumann",
+    authors = "Johannes Schumann, Santiago Pena Martinez",
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
     ),
