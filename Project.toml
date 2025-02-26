@@ -1,6 +1,6 @@
 name = "NuFlux"
 uuid = "efbbe403-48f9-4d1c-bbe5-17d2c19d1ebf"
-authors = ["Johannes Schumann <johannes.schumann@fau.de>"]
+authors = ["Johannes Schumann <johannes.schumann@fau.de>", "Santiago Pena Martinez <spenam@unal.edu.co>"]
 version = "0.1.0"
 
 [deps]
