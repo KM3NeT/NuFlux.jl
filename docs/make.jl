@@ -10,11 +10,11 @@ makedocs(;
         "Introduction" => "index.md",
         "API" => "api.md",
     ],
-    repo="https://github.com/8me/NuFlux.jl/blob/{commit}{path}#L{line}",
+    repo="https://github.com/KM3NeT/NuFlux.jl/blob/{commit}{path}#L{line}",
     sitename="NuFlux.jl",
 )
 
 deploydocs(;
-    repo="github.com/8me/NuFlux.jl",
+    repo="github.com/KM3NeT/NuFlux.jl",
     devbranch="main"
 )
