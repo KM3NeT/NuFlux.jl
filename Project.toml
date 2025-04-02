@@ -1,7 +1,7 @@
 name = "NuFlux"
 uuid = "efbbe403-48f9-4d1c-bbe5-17d2c19d1ebf"
 authors = ["Johannes Schumann <johannes.schumann@fau.de>", "Santiago Pena Martinez <spenam@unal.edu.co>"]
-version = "0.1.0"
+version = "0.1.3"
 
 [deps]
 Corpuscles = "e78a0372-c628-4773-9c8d-eb17d149bf93"
