@@ -114,7 +114,7 @@ Create a range from a vector of values, ensuring constant spacing.
 function _makerange(x)
     diffs = x[2:end] - x[1:end-1]
     std(diffs) > 1e-4 && error("value spacing not constant")
-    minimum(x):mean(diffs):maximum(x)
+    range(minimum(x), maximum(x), length=length(x))
 end
 
 """
