@@ -1,7 +1,11 @@
-![](https://github.com/KM3NeT/NuFlux.jl/raw/main/docs/src/assets/nuflux.svg)
+![](https://git.km3net.de/simulation/NuFlux.jl/-/raw/main/docs/src/assets/nuflux.svg)
 
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://km3net.github.io/NuFlux.jl/dev)
-[![Build Status](https://github.com/KM3NeT/NuFlux.jl/workflows/CI/badge.svg)](https://github.com/KM3NeT/NuFlux.jl/actions)
+
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://simulation.pages.km3net.de/NuFlux.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://simulation.pages.km3net.de/NuFlux.jl/dev)
+[![pipeline status](https://git.km3net.de/simulation/NuFlux.jl/badges/main/pipeline.svg)](https://git.km3net.de/simulation/NuFlux.jl/-/commits/main)
+[![coverage report](https://git.km3net.de/simulation/NuFlux.jl/badges/main/coverage.svg)](https://git.km3net.de/simulation/NuFlux.jl/-/commits/main)
+
 
 # NuFlux.jl
 
