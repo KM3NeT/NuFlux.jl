@@ -3,18 +3,27 @@ using Documenter, NuFlux
 makedocs(;
     modules = [NuFlux],
     authors = "Johannes Schumann, Santiago Pena Martinez",
-    format = Documenter.HTML(
-        prettyurls = get(ENV, "CI", nothing) == "true",
+    sitename = "NuFlux.jl",
+    format = Documenter.HTML(;
+        assets = ["assets/custom.css"],
+        sidebar_sitename = false,
+        collapselevel = 4,
+        warn_outdated = true,
     ),
-    pages=[
+    warnonly = [:missing_docs],
+    checkdocs = :exports,
+    pages = [
         "Introduction" => "index.md",
         "API" => "api.md",
     ],
-    repo="https://github.com/KM3NeT/NuFlux.jl/blob/{commit}{path}#L{line}",
-    sitename="NuFlux.jl",
+    repo = Documenter.Remotes.URL(
+        "https://git.km3net.de/simulation/NuFlux.jl/blob/{commit}{path}#L{line}",
+        "https://git.km3net.de/simulation/NuFlux.jl"
+    ),
 )
 
 deploydocs(;
-    repo="github.com/KM3NeT/NuFlux.jl",
-    devbranch="main"
+  repo = "git.km3net.de/simulation/NuFlux.jl",
+  devbranch = "main",
+  push_preview=true
 )
