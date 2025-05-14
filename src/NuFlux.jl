@@ -13,6 +13,10 @@ const ANUE_PDGID = Particle("~nu(e)0").pdgid.value
 const NUMU_PDGID = Particle("nu(mu)0").pdgid.value
 const ANUMU_PDGID = Particle("~nu(mu)0").pdgid.value
 
+const INTERPOLATION_METHODS = Dict("linear" => BSpline(Linear()),
+                                "quadratic" => BSpline(Quadratic(Line(OnGrid()))),
+                                "cubic" => BSpline(Cubic(Line(OnGrid()))))
+
 """
 Abstract type representing a neutrino flux model.
 """
@@ -217,20 +221,22 @@ $(SIGNATURES)
 # Arguments
 - `flux`:       Flux data 
 - `energy`:     Energy in GeV
-- `interpol`:   Interpolate the data
+- `interpol`:   Interpolate the data. default==false
+- `interpol_method`:   Method to interpolate the data ("linear", "quadratic", "cubic"). default=="cubic".
+- `interp_logflux`:   Interpolate using the values of log10(flux). default==false
 
 # Returns
 - `Float64`: The flux value at the given energy.
 """
-function flux(f::FluxTable, energy::S; interpol::Bool=false) where {S <: Real}
+function flux(f::FluxTable, energy::S; interpol::Bool=false, interpol_method::String="cubic", interp_logflux::Bool=false) where {S <: Real}
     if interpol
         etp = get!(lru_energy_etp, f) do
-            tmp = mean(f.flux, dims=(1,2))[1,1,:]
-            itp = interpolate(tmp, BSpline(Cubic(Line(OnGrid()))))
+            tmp = interp_logflux ? log10.(mean(f.flux, dims=(1,2))[1,1,:]) : mean(f.flux, dims=(1,2))[1,1,:]
+            itp = interpolate(tmp, INTERPOLATION_METHODS[interpol_method])
             sitp = scale(itp, _makerange(log10.(f.energies)))
             extrapolate(sitp, Flat())
         end
-        return etp(log10(energy))
+        return interp_logflux ?  10^etp(log10(energy)) : etp(log10(energy))
     else
         idx_energy = findmin(abs.(f.energies .- energy))[2]
         return mean(f.flux[:, :, idx_energy])
@@ -246,20 +252,22 @@ $(SIGNATURES)
 - `flux`:       Flux data 
 - `energy`:     Energy in GeV
 - `cosθ`:       Cosine of the zenith angle
-- `interpol`:   Interpolate the data
+- `interpol`:   Interpolate the data. default==false
+- `interpol_method`:   Method to interpolate the data ("linear", "quadratic", "cubic"). default=="cubic".
+- `interp_logflux`:   Interpolate using the values of log10(flux). default==false
 
 # Returns
 - `Float64`: The flux value at the given energy and zenith angle.
 """
-function flux(f::FluxTable, energy::S, cosθ::T; interpol::Bool=false) where {S,T <: Real}
+function flux(f::FluxTable, energy::S, cosθ::T; interpol::Bool=false, interpol_method::String="cubic", interp_logflux::Bool=false) where {S,T <: Real}
     if interpol
         etp = get!(lru_zenith_energy_etp, f) do
-            tmp = mean(f.flux, dims=2)[:,1,:]
-            itp = interpolate(tmp, BSpline(Cubic(Line(OnGrid()))))
+            tmp = interp_logflux ? log10.(mean(f.flux, dims=2)[:,1,:]) : mean(f.flux, dims=2)[:,1,:]
+            itp = interpolate(tmp, INTERPOLATION_METHODS[interpol_method])
             sitp = scale(itp, _makerange(_getbinmids(f.coszentihbinedges)), _makerange(log10.(f.energies)))
             extrapolate(sitp, Flat())
         end
-        return etp(cosθ, log10(energy))
+        return interp_logflux ?  10^etp(cosθ, log10(energy)) : etp(cosθ, log10(energy))
     else
         idx_energy = findmin(abs.(f.energies .- energy))[2]
         idx_coszenith = _getbinindex(f.coszentihbinedges, cosθ)
@@ -277,19 +285,21 @@ $(SIGNATURES)
 - `energy`:     Energy in GeV
 - `cosθ`:       Cosine of the zenith angle
 - `ϕ`:          Azimuth angle
-- `interpol`:   Interpolate the data
+- `interpol`:   Interpolate the data. default==false
+- `interpol_method`:   Method to interpolate the data ("linear", "quadratic", "cubic"). default=="cubic".
+- `interp_logflux`:   Interpolate using the values of log10(flux). default==false
 
 # Returns
 - `Float64`: The flux value at the given energy, zenith angle, and azimuth angle.
 """
-function flux(f::FluxTable, energy::S, cosθ::T, ϕ::U; interpol::Bool=false) where {S,T,U <: Real}
+function flux(f::FluxTable, energy::S, cosθ::T, ϕ::U; interpol::Bool=false,interpol_method::String="cubic", interp_logflux::Bool=false) where {S,T,U <: Real}
     if interpol
         etp = get!(lru_zenith_azimuth_energy_etp, f) do
-            itp = interpolate(f.flux, BSpline(Cubic(Line(OnGrid()))))
+            itp = interp_logflux ? interpolate(log10.(f.flux), INTERPOLATION_METHODS[interpol_method]) : interpolate(f.flux, INTERPOLATION_METHODS[interpol_method])
             sitp = scale(itp, _makerange(_getbinmids(f.coszentihbinedges)), _makerange(_getbinmids(f.azimuthbinedges)), _makerange(log10.(f.energies)))
             extrapolate(sitp, Flat())
         end
-        return etp(cosθ, ϕ, log10(energy))
+        return interp_logflux ? 10^etp(cosθ, ϕ, log10(energy)) : etp(cosθ, ϕ, log10(energy))
     else
         idx_energy = findmin(abs.(f.energies .- energy))[2]
         idx_azimuth = _getbinindex(f.azimuthbinedges, ϕ)
