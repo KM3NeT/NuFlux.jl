@@ -28,6 +28,21 @@ Pkg.instantiate()
 
 Then you are good to go to use `NuFlux.jl`
 
+
+## Usage
+The function `NuFlux.readfluxfile(my/flux/file)` will read the Honda flux file of any site and return a dictionary where each key is the the table for a different neutrino type.
+
+The main function which extracts the flux value is `NuFlux.flux(flux_of_specific_neutrino_type, energy, cosθ, ϕ; interpol=true)`
+
+This function extracts the flux at a given energy, zenith direction cosθ, and azimuth direction ϕ. If the argument of the azimuth direction is missing it will take the mean of the flux values, if the value of the zenith direction is missing another mean will be computed.
+The function allows to compute an interpolation from the table using the boolean of `interpol`.
+
+The `flux` function allows to define which kind of interpolation to be used with the argument `interpol_method` which can be `"linear", "quadratic", "cubic"`, the default method is `"cubic"`. 
+Additionally, the argument `interp_logflux` is a boolean where if `true` it will interpolate using the $\log_10$ values of the flux to allow for a smoother interpolation, the default value is `false`.
+
+It is recommended to use the combination of `interpol_method="linear",interp_logflux=true` as this is shown to better approximate the actual behavior of the Honda fluxes.
+
+
 ## Example
 
 Here’s a simple example to get started with `NuFlux.jl`. This example demonstrates how to load a flux table and calculate the flux for a given energy, zenith angle, and azimuth angle.
